@@ -1,0 +1,407 @@
+{
+  "version": "1.0",
+  "properties": [
+    {
+      "id": "property_bool",
+      "name": "布尔型属性",
+      "desc": "",
+      "mode": "rw",
+      "define": {
+        "type": "bool",
+        "mapping": {
+          "0": "关",
+          "1": "开"
+        }
+      },
+      "required": false
+    },
+    {
+      "id": "property_int",
+      "name": "整数型属性",
+      "desc": "",
+      "mode": "rw",
+      "define": {
+        "type": "int",
+        "min": "-100000",
+        "max": "100000",
+        "start": "0",
+        "step": "1",
+        "unit": ""
+      },
+      "required": false
+    },
+    {
+      "id": "property_string",
+      "name": "字符串属性",
+      "desc": "",
+      "mode": "rw",
+      "define": {
+        "type": "string",
+        "min": "0",
+        "max": "128"
+      },
+      "required": false
+    },
+    {
+      "id": "property_float",
+      "name": "浮点型属性",
+      "desc": "",
+      "mode": "rw",
+      "define": {
+        "type": "float",
+        "min": "-100",
+        "max": "100",
+        "start": "0",
+        "step": "0.001",
+        "unit": ""
+      },
+      "required": false
+    },
+    {
+      "id": "property_enum",
+      "name": "枚举型属性",
+      "desc": "",
+      "mode": "rw",
+      "define": {
+        "type": "enum",
+        "mapping": {
+          "0": "ENUM0",
+          "1": "ENUM1",
+          "2": "ENUM2",
+          "3": "ENUM3"
+        }
+      },
+      "required": false
+    },
+    {
+      "id": "property_time",
+      "name": "时间型属性",
+      "desc": "",
+      "mode": "rw",
+      "define": {
+        "type": "timestamp"
+      },
+      "required": false
+    },
+    {
+      "id": "property_struct",
+      "name": "结构体属性",
+      "desc": "",
+      "mode": "rw",
+      "define": {
+        "type": "struct",
+        "specs": [
+          {
+            "id": "mem_bool",
+            "name": "布尔成员",
+            "dataType": {
+              "type": "bool",
+              "mapping": {
+                "0": "关",
+                "1": "开"
+              }
+            }
+          },
+          {
+            "id": "mem_int",
+            "name": "整数成员",
+            "dataType": {
+              "type": "int",
+              "min": "-10000",
+              "max": "10000",
+              "start": "0",
+              "step": "1",
+              "unit": ""
+            }
+          },
+          {
+            "id": "mem_string",
+            "name": "字符串成员",
+            "dataType": {
+              "type": "string",
+              "min": "0",
+              "max": "128"
+            }
+          },
+          {
+            "id": "mem_float",
+            "name": "浮点成员",
+            "dataType": {
+              "type": "float",
+              "min": "-100",
+              "max": "100",
+              "start": "0",
+              "step": "0.001",
+              "unit": ""
+            }
+          },
+          {
+            "id": "mem_enum",
+            "name": "枚举成员",
+            "dataType": {
+              "type": "enum",
+              "mapping": {
+                "0": "MEM_ENUM0",
+                "1": "MEM_ENUM1",
+                "2": "MEM_ENUM2"
+              }
+            }
+          },
+          {
+            "id": "mem_time",
+            "name": "时间成员",
+            "dataType": {
+              "type": "timestamp"
+            }
+          }
+        ]
+      },
+      "required": false
+    }
+  ],
+  "events": [
+    {
+      "id": "event_warnning",
+      "name": "告警事件",
+      "desc": "",
+      "type": "alert",
+      "params": [
+        {
+          "id": "param_bool",
+          "name": "布尔参数",
+          "define": {
+            "type": "bool",
+            "mapping": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "id": "param_int",
+          "name": "整数参数",
+          "define": {
+            "type": "int",
+            "min": "-100000",
+            "max": "1000000",
+            "start": "0",
+            "step": "1",
+            "unit": ""
+          }
+        },
+        {
+          "id": "param_string",
+          "name": "字符串参数",
+          "define": {
+            "type": "string",
+            "min": "0",
+            "max": "128"
+          }
+        },
+        {
+          "id": "param_float",
+          "name": "浮点参数",
+          "define": {
+            "type": "float",
+            "min": "0",
+            "max": "100",
+            "start": "0",
+            "step": "0.001",
+            "unit": ""
+          }
+        },
+        {
+          "id": "param_enum",
+          "name": "枚举参数",
+          "define": {
+            "type": "enum",
+            "mapping": {
+              "0": "PARAM_ENUM0",
+              "1": "PARAM_ENUM1",
+              "2": "PARAM_ENUM2"
+            }
+          }
+        },
+        {
+          "id": "param_time",
+          "name": "时间参数",
+          "define": {
+            "type": "timestamp"
+          }
+        }
+      ],
+      "required": false
+    },
+    {
+      "id": "event_error",
+      "name": "故障事件",
+      "desc": "",
+      "type": "fault",
+      "params": [
+        {
+          "id": "param_bool",
+          "name": "布尔参数",
+          "define": {
+            "type": "bool",
+            "mapping": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "id": "param_string",
+          "name": "字符串参数",
+          "define": {
+            "type": "string",
+            "min": "0",
+            "max": "128"
+          }
+        }
+      ],
+      "required": false
+    }
+  ],
+  "actions": [
+    {
+      "id": "action_test",
+      "name": "测试行为",
+      "desc": "",
+      "input": [
+        {
+          "id": "bool_input",
+          "name": "布尔输入",
+          "define": {
+            "type": "bool",
+            "mapping": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "id": "int_input",
+          "name": "整数输入",
+          "define": {
+            "type": "int",
+            "min": "-100000",
+            "max": "100000",
+            "start": "0",
+            "step": "1",
+            "unit": ""
+          }
+        },
+        {
+          "id": "string_input",
+          "name": "字符串输入",
+          "define": {
+            "type": "string",
+            "min": "0",
+            "max": "128"
+          }
+        },
+        {
+          "id": "float_input",
+          "name": "浮点输入",
+          "define": {
+            "type": "float",
+            "min": "-100",
+            "max": "100",
+            "start": "0",
+            "step": "1",
+            "unit": ""
+          }
+        },
+        {
+          "id": "enum_input",
+          "name": "枚举输入",
+          "define": {
+            "type": "enum",
+            "mapping": {
+              "0": "INPUT_ENUM0",
+              "1": "INPUT_ENUM1",
+              "2": "INPUT_ENUM2"
+            }
+          }
+        },
+        {
+          "id": "time_input",
+          "name": "时间输入",
+          "define": {
+            "type": "timestamp"
+          }
+        }
+      ],
+      "output": [
+        {
+          "id": "bool_output",
+          "name": "布尔输出",
+          "define": {
+            "type": "bool",
+            "mapping": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "id": "int_output",
+          "name": "整数输出",
+          "define": {
+            "type": "int",
+            "min": "-100000",
+            "max": "1000000",
+            "start": "0",
+            "step": "1",
+            "unit": ""
+          }
+        },
+        {
+          "id": "string_output",
+          "name": "字符串输出",
+          "define": {
+            "type": "string",
+            "min": "0",
+            "max": "128"
+          }
+        },
+        {
+          "id": "float_output",
+          "name": "浮点输出",
+          "define": {
+            "type": "float",
+            "min": "-100",
+            "max": "100",
+            "start": "0",
+            "step": "1",
+            "unit": ""
+          }
+        },
+        {
+          "id": "enum_output",
+          "name": "枚举输出",
+          "define": {
+            "type": "enum",
+            "mapping": {
+              "0": "OUTPUT_ENUM0",
+              "1": "OUTPUT_ENUM1",
+              "2": "OUTPUT_ENUM2"
+            }
+          }
+        },
+        {
+          "id": "time_output",
+          "name": "时间输出",
+          "define": {
+            "type": "timestamp"
+          }
+        }
+      ],
+      "required": false
+    }
+  ],
+  "profile": {
+    "ProductId": "97P6GPE1QW",
+    "CategoryId": "1"
+  }
+}
