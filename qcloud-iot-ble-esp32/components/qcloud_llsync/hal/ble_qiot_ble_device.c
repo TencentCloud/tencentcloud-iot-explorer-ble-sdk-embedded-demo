@@ -37,15 +37,9 @@ extern "C" {
 #include "freertos/timers.h"
 
 // divece info which defined in explorer platform
-#if 0
-#define PRODUCT_ID  "13SJVR7LAS"
-#define DEVICE_NAME "ble01"
-#define SECRET_KEY  "Kd1fkCPvaoYWShcsmpeS9g=="
-#else
-#define PRODUCT_ID  "QWQPD30YJY"
-#define DEVICE_NAME "test001"
-#define SECRET_KEY  "TiuidqC4KpX46kclS+6rTA=="
-#endif
+#define PRODUCT_ID  "F6CJEQZPHL"
+#define DEVICE_NAME "test"
+#define SECRET_KEY  "dfzjW4nVnQcEY9LPG27gWA=="
 
 int ble_get_product_id(char *product_id)
 {

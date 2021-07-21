@@ -1,9 +1,5 @@
 {
   "version": "1.0",
-  "profile": {
-    "ProductId": "DHZX03IQAZ",
-    "CategoryId": "1"
-  },
   "properties": [
     {
       "id": "t_bool",
@@ -181,6 +177,134 @@
             }
           }
         ]
+      },
+      "required": false
+    },
+    {
+      "id": "t_int_array",
+      "name": "测试整数数组",
+      "desc": "",
+      "mode": "rw",
+      "define": {
+        "arrayInfo": {
+          "type": "int",
+          "min": "0",
+          "max": "100",
+          "start": "0",
+          "step": "1",
+          "unit": ""
+        },
+        "type": "array"
+      },
+      "required": false
+    },
+    {
+      "id": "t_flot_array",
+      "name": "测试浮点型数组",
+      "desc": "",
+      "mode": "rw",
+      "define": {
+        "arrayInfo": {
+          "type": "float",
+          "min": "0",
+          "max": "100",
+          "start": "0",
+          "step": "1",
+          "unit": ""
+        },
+        "type": "array"
+      },
+      "required": false
+    },
+    {
+      "id": "t_struct_array",
+      "name": "测试结构体数组",
+      "desc": "",
+      "mode": "rw",
+      "define": {
+        "arrayInfo": {
+          "type": "struct",
+          "specs": [
+            {
+              "id": "t_bool",
+              "name": "布尔",
+              "dataType": {
+                "type": "bool",
+                "mapping": {
+                  "0": "关",
+                  "1": "开"
+                }
+              }
+            },
+            {
+              "id": "t_int",
+              "name": "整数",
+              "dataType": {
+                "type": "int",
+                "min": "0",
+                "max": "100",
+                "start": "0",
+                "step": "1",
+                "unit": ""
+              }
+            },
+            {
+              "id": "t_str",
+              "name": "字符串",
+              "dataType": {
+                "type": "string",
+                "min": "0",
+                "max": "32"
+              }
+            },
+            {
+              "id": "t_float",
+              "name": "浮点",
+              "dataType": {
+                "type": "float",
+                "min": "0",
+                "max": "100",
+                "start": "0",
+                "step": "1",
+                "unit": ""
+              }
+            },
+            {
+              "id": "t_time",
+              "name": "时间",
+              "dataType": {
+                "type": "timestamp"
+              }
+            },
+            {
+              "id": "t_enum",
+              "name": "枚举",
+              "dataType": {
+                "type": "enum",
+                "mapping": {
+                  "0": "test_0",
+                  "1": "test_1"
+                }
+              }
+            }
+          ]
+        },
+        "type": "array"
+      },
+      "required": false
+    },
+    {
+      "id": "t_str_array",
+      "name": "测试字符串数组",
+      "desc": "",
+      "mode": "rw",
+      "define": {
+        "arrayInfo": {
+          "type": "string",
+          "min": "0",
+          "max": "32"
+        },
+        "type": "array"
       },
       "required": false
     }
@@ -396,5 +520,9 @@
       ],
       "required": false
     }
-  ]
+  ],
+  "profile": {
+    "ProductId": "SSM87M448T",
+    "CategoryId": "1"
+  }
 }
