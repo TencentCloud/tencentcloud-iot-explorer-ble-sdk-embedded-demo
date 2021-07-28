@@ -1,0 +1,7 @@
+menu "QCloud Iot C"
+config QCLOUD_IOT_C_SDK
+
+    bool "QCloud Iot C SDK."
+    default "y"
+
+endmenu
