@@ -56,9 +56,9 @@ extern "C" {
 #include "flash_storage.h"
 
 // divece info which defined in explorer platform
-#define PRODUCT_ID  "10Y4BSAMZD"
-#define DEVICE_NAME "test"
-#define SECRET_KEY  "fkNkBQvcCIqpgXOGx1nIIA=="
+#define PRODUCT_ID  "PRODUCT_ID"
+#define DEVICE_NAME "YOUR_DEV_NAME"
+#define SECRET_KEY  "YOUR_IOT_PSK"
 
 static uint8_t m_adv_handle =
     BLE_GAP_ADV_SET_HANDLE_NOT_SET; /**< Advertising handle used to identify an advertising set. */
