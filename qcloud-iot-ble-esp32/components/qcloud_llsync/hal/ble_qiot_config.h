@@ -66,7 +66,7 @@ extern "C" {
 
 #define BLE_QIOT_LLSYNC_STANDARD    1   // support llsync standard
 #if BLE_QIOT_LLSYNC_STANDARD
-    #define BLE_QIOT_DYNREG_ENABLE  1
+    #define BLE_QIOT_DYNREG_ENABLE  0
 // some users hope to confirm on the device before the binding, set BLE_QIOT_SECURE_BIND is 1 to enable the secure
 // binding and enable secure bind in iot-explorer console. When the server is bound, the device callback ble_secure_bind_user_cb()
 // will be triggered, the user agree or refuse connect by ble_secure_bind_user_confirm(). If the device does not respond
