@@ -37,9 +37,23 @@ extern "C" {
 #include "freertos/timers.h"
 
 // divece info which defined in explorer platform
+
 #define PRODUCT_ID  "PRODUCT_ID"
 #define DEVICE_NAME "YOUR_DEV_NAME"
-#define SECRET_KEY  "YOUR_IOT_PSK"
+
+#if BLE_QIOT_DYNREG_ENABLE
+static uint8_t sg_device_secret[24] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+#else
+static uint8_t sg_device_secret[24] = "YOUR_IOT_PSK";
+#endif
+
+#define PROUDCT_SECRET  "YOUR_PRODUCT_KEY"
+
+int ble_get_product_key(char *product_secret)
+{
+    memcpy(product_secret, PROUDCT_SECRET, sizeof(PROUDCT_SECRET) - 1);
+    return 0;
+}
 
 int ble_get_product_id(char *product_id)
 {
@@ -55,9 +69,15 @@ int ble_get_device_name(char *device_name)
     return strlen(DEVICE_NAME);
 }
 
+int ble_set_psk(const char *psk, uint8_t len)
+{
+    memcpy(sg_device_secret, psk, sizeof(sg_device_secret));
+    return 0;
+}
+
 int ble_get_psk(char *psk)
 {
-    memcpy(psk, SECRET_KEY, strlen(SECRET_KEY));
+    memcpy(psk, sg_device_secret, sizeof(sg_device_secret));
 
     return 0;
 }

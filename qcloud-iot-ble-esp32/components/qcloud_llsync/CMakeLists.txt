@@ -4,9 +4,10 @@ if (CONFIG_QCLOUD_LLSYNC_SUPPORT)
             src/core/ble_qiot_llsync_device.c
             src/core/ble_qiot_llsync_event.c
             src/core/ble_qiot_llsync_ota.c
-            src/core/ble_qiot_llsync_utils.c
+	    src/core/ble_qiot_llsync_utils.c
             src/core/ble_qiot_service.c
             src/utils/ble_qiot_utils_base64.c
+	    src/utils/ble_qiot_utils_aes.c
             src/utils/ble_qiot_utils_hmac.c
             src/utils/ble_qiot_utils_log.c
             src/utils/ble_qiot_utils_md5.c
