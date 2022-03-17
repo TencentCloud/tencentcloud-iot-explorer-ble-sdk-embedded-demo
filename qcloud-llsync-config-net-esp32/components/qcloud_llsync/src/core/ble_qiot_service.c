@@ -332,7 +332,7 @@ int ble_device_info_msg_handle(const char *in_buf, int in_len)
             return BLE_QIOT_RS_OK;
         }
     }
-    // ble_qiot_log_hex(BLE_QIOT_LOG_LEVEL_INFO, "tlv", p_data, p_data_len);
+    ble_qiot_log_hex(BLE_QIOT_LOG_LEVEL_INFO, "tlv", p_data, p_data_len);
 
     ch = p_data[0];
     switch (ch) {

@@ -148,6 +148,11 @@ ble_qiot_ret_status_t ble_combo_wifi_connect()
     return 0;
 }
 
+void unbind_dev_handle(void)
+{
+    esp_restart();
+}
+
 void app_main()
 {
     nvs_flash_init();

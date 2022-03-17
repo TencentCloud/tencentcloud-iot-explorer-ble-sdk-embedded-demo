@@ -220,9 +220,8 @@ static void property_report(void *pClient)
     sg_report_index++;
     message_len = HAL_Snprintf(message, sizeof(message),
                                "{\"method\":\"report\", \"clientToken\":\"%s-%d\", "
-                               "\"params\":{\"power_switch\":%d, \"color\":%d, \"brightness\":%d, \"name\":\"%s\"}}",
-                               sg_devInfo.product_id, sg_report_index, sg_led_info.power_off, sg_led_info.color,
-                               sg_led_info.brightness, sg_devInfo.device_name);
+                               "\"params\":{\"power_switch\":%d}}",
+                               sg_devInfo.product_id, sg_report_index, sg_led_info.power_off);
     // only change the brightness in the demo
     sg_led_info.brightness %= 100;
     sg_led_info.brightness++;
@@ -246,9 +245,9 @@ static void property_control_handle(void *pClient, const char *token, const char
         property_param = LITE_json_value_of(sg_property_name[i], params);
         if (NULL != property_param) {
             Log_i("\t%-16s = %-10s", sg_property_name[i], property_param);
-            if (i == 1) {
+            if (i == 0) {
                 // only change the brightness in the demo
-                sg_led_info.brightness = atoi(property_param);
+                sg_led_info.power_off = atoi(property_param);
             }
             HAL_Free(property_param);
         }
@@ -624,7 +623,7 @@ int wifi_config_sample_main(void)
             HAL_SleepMs(1000);
 
         // method: report
-        //property_report(client);
+        property_report(client);
     } while (sg_loop_test);
 
     rc = IOT_MQTT_Destroy(&client);

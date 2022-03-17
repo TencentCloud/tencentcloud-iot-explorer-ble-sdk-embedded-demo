@@ -37,43 +37,63 @@
 static int _parse_action_input(DeviceAction *pAction, char *pInput)
 {
     int             i;
-    char *          temp;
+    char           *temp;
     DeviceProperty *pActionInput = pAction->pInput;
 
     // check and copy
     for (i = 0; i < pAction->input_num; i++) {
         if (JSTRING == pActionInput[i].type) {
-            pActionInput[i].data = LITE_json_value_of(pActionInput[i].key, pInput);
-            if (NULL == pActionInput[i].data) {
+            char *_p = LITE_json_value_of(pActionInput[i].key, pInput);
+            if (!_p) {
                 Log_e("action input data [%s] not found!", STRING_PTR_PRINT_SANITY_CHECK(pActionInput[i].key));
                 return -1;
             }
+            strncpy(pActionInput[i].data, _p, pActionInput[i].data_buff_len);
+            HAL_Free(_p);
         } else {
-            temp = LITE_json_value_of(pActionInput[i].key, pInput);
+            temp    = LITE_json_value_of(pActionInput[i].key, pInput);
+            int ret = 0;
             if (NULL == temp) {
                 Log_e("action input data [%s] not found!", STRING_PTR_PRINT_SANITY_CHECK(pActionInput[i].key));
                 return -1;
             }
-            if (JINT32 == pActionInput[i].type) {
-                if (sscanf(temp, "%" SCNi32, (int32_t *)pActionInput[i].data) != 1) {
-                    HAL_Free(temp);
-                    Log_e("parse code failed, errCode: %d", QCLOUD_ERR_JSON_PARSE);
-                    return -1;
-                }
-            } else if (JFLOAT == pActionInput[i].type) {
-                if (sscanf(temp, "%f", (float *)pActionInput[i].data) != 1) {
-                    HAL_Free(temp);
-                    Log_e("parse code failed, errCode: %d", QCLOUD_ERR_JSON_PARSE);
-                    return -1;
-                }
-            } else if (JUINT32 == pActionInput[i].type) {
-                if (sscanf(temp, "%" SCNu32, (uint32_t *)pActionInput[i].data) != 1) {
-                    HAL_Free(temp);
-                    Log_e("parse code failed, errCode: %d", QCLOUD_ERR_JSON_PARSE);
-                    return -1;
-                }
+            switch (pActionInput[i].type) {
+                case JINT32:
+                    ret = LITE_get_int32(pActionInput[i].data, temp);
+                    break;
+                case JFLOAT:
+                    ret = LITE_get_float(pActionInput[i].data, temp);
+                    break;
+                case JUINT32:
+                    ret = LITE_get_uint32(pActionInput[i].data, temp);
+                    break;
+                case JBOOL:
+                    ret = LITE_get_boolean(pActionInput[i].data, temp);
+                    break;
+                case JINT16:
+                    ret = LITE_get_int16(pActionInput[i].data, temp);
+                    break;
+                case JINT8:
+                    ret = LITE_get_int8(pActionInput[i].data, temp);
+                    break;
+                case JUINT16:
+                    ret = LITE_get_uint16(pActionInput[i].data, temp);
+                    break;
+                case JUINT8:
+                    ret = LITE_get_uint8(pActionInput[i].data, temp);
+                    break;
+                case JSTRING:
+                    Log_d("property data_buff_len %d", pActionInput[i].data_buff_len);
+                    ret = LITE_get_string(pActionInput[i].data, temp, pActionInput[i].data_buff_len);
+                    break;
+                default:
+                    ret = QCLOUD_ERR_MQTT_UNKNOWN;
+                    Log_e("type %d not supported", pActionInput[i].type);
+                    break;
             }
             HAL_Free(temp);
+            if (ret < 0)
+                return -1;
         }
     }
 
@@ -89,15 +109,15 @@ static void _handle_action(Qcloud_IoT_Template *pTemplate, List *list, const cha
 
     if (list->len) {
         ListIterator *iter;
-        ListNode *    node = NULL;
+        ListNode     *node = NULL;
 
-        if (NULL == (iter = list_iterator_new(list, LIST_TAIL))) {
+        if (NULL == (iter = qcloud_list_iterator_new(list, LIST_TAIL))) {
             HAL_MutexUnlock(pTemplate->mutex);
             IOT_FUNC_EXIT;
         }
 
         for (;;) {
-            node = list_iterator_next(iter);
+            node = qcloud_list_iterator_next(iter);
             if (NULL == node) {
                 break;
             }
@@ -110,16 +130,14 @@ static void _handle_action(Qcloud_IoT_Template *pTemplate, List *list, const cha
             ActionHandler *pActionHandle = (ActionHandler *)node->val;
 
             // check action id and call callback
-            if (0 == strcmp(pActionId, ((DeviceAction *)pActionHandle->action)->pActionId)) {
-                if (NULL != pActionHandle->callback) {
-                    if (!_parse_action_input(pActionHandle->action, pInput)) {
-                        ((DeviceAction *)pActionHandle->action)->timestamp = timestamp;
-                        pActionHandle->callback(pTemplate, pClientToken, pActionHandle->action);
-                    }
-                }
+            if (strcmp(pActionId, ((DeviceAction *)pActionHandle->action)->pActionId) || !(pActionHandle->callback))
+                continue;
+            if (!_parse_action_input(pActionHandle->action, pInput)) {
+                ((DeviceAction *)pActionHandle->action)->timestamp = timestamp;
+                pActionHandle->callback(pTemplate, pClientToken, pActionHandle->action);
             }
         }
-        list_iterator_destroy(iter);
+        qcloud_list_iterator_destroy(iter);
     }
     HAL_MutexUnlock(pTemplate->mutex);
     IOT_FUNC_EXIT;
@@ -140,6 +158,8 @@ static void _on_action_handle_callback(void *pClient, MQTTMessage *message, void
     int   timestamp    = 0;
 
     Log_d("recv:%.*s", (int)message->payload_len, (char *)message->payload);
+    if (!template_client)
+        return;
 
     // prase_method
     if (!parse_template_method_type((char *)message->payload, &type_str)) {
@@ -176,21 +196,20 @@ static void _on_action_handle_callback(void *pClient, MQTTMessage *message, void
     }
 
     // find action ID in register list and call handle
-    if (template_client != NULL)
-        _handle_action(template_client, template_client->inner_data.action_handle_list, client_token, action_id,
-                       timestamp, pInput);
+    _handle_action(template_client, template_client->inner_data.action_handle_list, client_token, action_id, timestamp,
+                   pInput);
 
 EXIT:
     HAL_Free(type_str);
     HAL_Free(client_token);
     HAL_Free(pInput);
-    return;
+    HAL_Free(action_id);
 }
 
 int IOT_Action_Init(void *c)
 {
     Qcloud_IoT_Template *pTemplate                           = (Qcloud_IoT_Template *)c;
-    static char          topic_name[MAX_SIZE_OF_CLOUD_TOPIC] = {0};
+    char          topic_name[MAX_SIZE_OF_CLOUD_TOPIC] = {0};
 
     int size = HAL_Snprintf(topic_name, MAX_SIZE_OF_CLOUD_TOPIC, "$thing/down/action/%s/%s",
                             pTemplate->device_info.product_id, pTemplate->device_info.device_name);
@@ -227,7 +246,7 @@ static int _add_action_handle_to_template_list(Qcloud_IoT_Template *pTemplate, D
         Log_e("run list_node_new is error!");
         IOT_FUNC_EXIT_RC(QCLOUD_ERR_FAILURE);
     }
-    list_rpush(pTemplate->inner_data.action_handle_list, node);
+    qcloud_list_rpush(pTemplate->inner_data.action_handle_list, node);
 
     IOT_FUNC_EXIT_RC(QCLOUD_RET_SUCCESS);
 }
@@ -236,7 +255,7 @@ static int _check_action_existence(Qcloud_IoT_Template *ptemplate, DeviceAction 
 {
     ListNode *node;
     HAL_MutexLock(ptemplate->mutex);
-    node = list_find(ptemplate->inner_data.action_handle_list, pAction);
+    node = qcloud_list_find(ptemplate->inner_data.action_handle_list, pAction);
     HAL_MutexUnlock(ptemplate->mutex);
     return (NULL != node);
 }
@@ -272,12 +291,12 @@ int IOT_Action_Remove(void *pTemplate, DeviceAction *pAction)
 
     ListNode *node;
     HAL_MutexLock(ptemplate->mutex);
-    node = list_find(ptemplate->inner_data.action_handle_list, pAction);
+    node = qcloud_list_find(ptemplate->inner_data.action_handle_list, pAction);
     if (NULL == node) {
         rc = QCLOUD_ERR_NOT_PROPERTY_EXIST;
         Log_e("Try to remove a non-existent action.");
     } else {
-        qcloud_iot_c_sdk_list_remove(ptemplate->inner_data.action_handle_list, node);
+        qcloud_list_remove(ptemplate->inner_data.action_handle_list, node);
     }
     HAL_MutexUnlock(ptemplate->mutex);
 
@@ -334,18 +353,20 @@ static int _iot_construct_action_json(void *handle, char *jsonBuffer, size_t siz
     }
 
     DeviceProperty *pJsonNode = pAction->pOutput;
-    for (i = 0; i < pAction->output_num; i++) {
-        if (pJsonNode != NULL && pJsonNode->key != NULL) {
-            rc = template_put_json_node(jsonBuffer, remain_size, pJsonNode->key, pJsonNode->data, pJsonNode->type);
-
-            if (rc != QCLOUD_RET_SUCCESS) {
-                return rc;
-            }
-        } else {
+    if (!pJsonNode) {
+        Log_e("Output json node is null");
+        return QCLOUD_ERR_INVAL;
+    }
+    for (i = 0; i < pAction->output_num; i++, pJsonNode++) {
+        if (pJsonNode->key == NULL) {
             Log_e("%dth/%d null event property data", i, pAction->output_num);
             return QCLOUD_ERR_INVAL;
         }
-        pJsonNode++;
+        rc = template_put_json_node(jsonBuffer, remain_size, pJsonNode->key, pJsonNode->data, pJsonNode->type);
+
+        if (rc != QCLOUD_RET_SUCCESS) {
+            return rc;
+        }
     }
     if ((remain_size = sizeOfBuffer - strlen(jsonBuffer)) <= 1) {
         return QCLOUD_ERR_JSON_BUFFER_TOO_SMALL;

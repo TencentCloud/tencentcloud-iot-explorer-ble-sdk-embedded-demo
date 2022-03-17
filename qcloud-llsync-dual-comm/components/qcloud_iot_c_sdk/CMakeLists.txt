@@ -44,7 +44,8 @@ if (CONFIG_QCLOUD_IOT_C_SDK)
             sdk_src/utils_sha1.c
             sdk_src/utils_timer.c
             sdk_src/utils_url_download.c
-            sdk_src/utils_url_upload.c)
+            sdk_src/utils_url_upload.c
+			sdk_src/device_bind.c)
 
     list(APPEND srcs
             platform/HAL_Airkiss.c

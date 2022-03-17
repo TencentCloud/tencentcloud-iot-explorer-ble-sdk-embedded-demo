@@ -40,6 +40,10 @@ static ble_timer_t sg_bind_timer = NULL;
 static ble_bind_data sg_bind_auth_data;
 #endif //BLE_QIOT_SECURE_BIND
 
+#if BLE_QIOT_LLSYNC_DUAL_COM
+uint8_t ble_control = 0;
+#endif
+
 static qiot_service_init_s service_info = {
     .service_uuid16  = IOT_BLE_UUID_SERVICE,
     .service_uuid128 = IOT_BLE_UUID_BASE,
@@ -332,7 +336,7 @@ int ble_device_info_msg_handle(const char *in_buf, int in_len)
             return BLE_QIOT_RS_OK;
         }
     }
-    // ble_qiot_log_hex(BLE_QIOT_LOG_LEVEL_INFO, "tlv", p_data, p_data_len);
+    ble_qiot_log_hex(BLE_QIOT_LOG_LEVEL_INFO, "tlv", p_data, p_data_len);
 
     ch = p_data[0];
     switch (ch) {
@@ -409,7 +413,6 @@ int ble_device_info_msg_handle(const char *in_buf, int in_len)
 #endif //BLE_QIOT_LLSYNC_STANDARD
 #if BLE_QIOT_LLSYNC_CONFIG_NET
         case E_DEV_MSG_GET_DEV_INFO:
-            llsync_connection_state_set(E_LLSYNC_CONNECTED);
             ret = ble_event_report_device_info(E_REPORT_DEVNAME);
             break;
         case E_DEV_MSG_SET_WIFI_MODE:

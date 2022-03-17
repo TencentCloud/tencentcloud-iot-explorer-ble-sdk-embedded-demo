@@ -110,6 +110,12 @@ typedef enum {
     /* MQTT unsubscribe */
     MQTT_EVENT_UNSUBSCRIBE = 14,
 
+    MQTT_EVENT_GATEWAY_SEARCH = 15,
+
+    MQTT_EVENT_GATEWAY_CHANGE = 16,
+
+    MQTT_EVENT_GATEWAY_UNBIND_ALL = 17,
+
 } MQTTEventType;
 
 /**
@@ -325,6 +331,21 @@ bool IOT_MQTT_IsConnected(void *pClient);
  */
 int IOT_MQTT_GetErrCode(void);
 
+/**
+ * @brief Get the device Info of the dedicated MQTT client
+ *
+ * @param pClient       handle to MQTT client
+ * @return pointer to the device Info
+ */
+DeviceInfo *IOT_MQTT_GetDeviceInfo(void *pClient);
+
+/**
+ * @brief Active triggering of mqtt reconnection
+ *
+ * @param pClient       handle to MQTT client
+ * @return error code of last IOT_MQTT_Construct operation
+ */
+int IOT_MQTT_Reconnect(void *pClient);
 #ifdef __cplusplus
 }
 #endif

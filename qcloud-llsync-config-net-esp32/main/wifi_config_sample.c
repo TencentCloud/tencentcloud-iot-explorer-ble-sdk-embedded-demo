@@ -32,6 +32,8 @@
 
 #include "qcloud_wifi_config.h"
 #include "qcloud_wifi_config_internal.h"
+#include "qcloud_iot_export_device_bind.h"
+#include "ble_qiot_export.h"
 
 #if !(WIFI_PROV_SOFT_AP_ENABLE || WIFI_PROV_SMART_CONFIG_ENABLE || WIFI_PROV_AIRKISS_CONFIG_ENABLE || \
       WIFI_PROV_SIMPLE_CONFIG_ENABLE || WIFI_PROV_BT_COMBO_CONFIG_ENABLE)
@@ -220,9 +222,8 @@ static void property_report(void *pClient)
     sg_report_index++;
     message_len = HAL_Snprintf(message, sizeof(message),
                                "{\"method\":\"report\", \"clientToken\":\"%s-%d\", "
-                               "\"params\":{\"power_switch\":%d, \"color\":%d, \"brightness\":%d, \"name\":\"%s\"}}",
-                               sg_devInfo.product_id, sg_report_index, sg_led_info.power_off, sg_led_info.color,
-                               sg_led_info.brightness, sg_devInfo.device_name);
+                               "\"params\":{\"power_switch\":%d}}",
+                               sg_devInfo.product_id, sg_report_index, sg_led_info.power_off);
     // only change the brightness in the demo
     sg_led_info.brightness %= 100;
     sg_led_info.brightness++;
@@ -246,9 +247,9 @@ static void property_control_handle(void *pClient, const char *token, const char
         property_param = LITE_json_value_of(sg_property_name[i], params);
         if (NULL != property_param) {
             Log_i("\t%-16s = %-10s", sg_property_name[i], property_param);
-            if (i == 1) {
+            if (i == 0) {
                 // only change the brightness in the demo
-                sg_led_info.brightness = atoi(property_param);
+                sg_led_info.power_off = atoi(property_param);
             }
             HAL_Free(property_param);
         }
@@ -474,6 +475,7 @@ static void _wifi_config_result_cb(eWiFiConfigResult event, void *usr_data)
     }
 }
 
+
 static bool qcloud_wifi_config_proc()
 {
     int   rc;
@@ -546,6 +548,14 @@ static bool qcloud_wifi_config_proc()
     return false;
 }
 
+extern void unbind_dev_handle(void);
+
+void unbind_device_callback(void *pContext, const char *msg, uint32_t msgLen)
+{
+    HAL_SleepMs(2000);
+    unbind_dev_handle();
+}
+
 int wifi_config_sample_main(void)
 {
     int rc;
@@ -608,6 +618,8 @@ int wifi_config_sample_main(void)
         return rc;
     }
 
+    IOT_Unbind_Device_ByCloud(client, unbind_device_callback, NULL);
+
     // method: get_status
     property_get_status(client);
     do {
@@ -633,5 +645,6 @@ int wifi_config_sample_main(void)
 #ifdef LOG_UPLOAD
     IOT_Log_Fini_Uploader();
 #endif
+
     return rc;
 }

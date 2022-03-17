@@ -82,7 +82,7 @@ ble_qiot_ret_status_t ble_event_notify2(uint8_t type, uint8_t length_flag, uint8
     mtu_size = llsync_mtu_get();
     mtu_size = mtu_size > sizeof(send_buf) ? sizeof(send_buf) : mtu_size;
     mtu_size -= (BLE_QIOT_EVENT_FIXED_HEADER_LEN + header_len);
-    // ble_qiot_log_d("mtu size %d", mtu_size);
+    ble_qiot_log_i("mtu size %d", mtu_size);
 
     do {
         memset(send_buf, 0, sizeof(send_buf));
