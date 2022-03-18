@@ -22,7 +22,6 @@
 #include "qcloud_wifi_config.h"
 #include "qcloud_wifi_config_internal.h"
 
-#include "ble_qiot_export.h"
 /************** WiFi config error msg collect and post feature ******************/
 
 #define LOG_QUEUE_SIZE 10
@@ -52,7 +51,6 @@ int init_dev_log_queue(void)
         Log_e("xQueueCreate failed");
         return ERR_OS_QUEUE;
     }
-    Log_e("init dev log queue");
 #endif
     return 0;
 }
@@ -78,6 +76,10 @@ int push_dev_log(const char *func, const int line, const char *fmt, ...)
 
     // only keep the latest LOG_QUEUE_SIZE log
     uint32_t log_cnt = (uint32_t)HAL_QueueItemWaitingCount(sg_dev_log_queue);
+    if (log_cnt > LOG_QUEUE_SIZE)
+    {
+        return ERR_OS_QUEUE;
+    }
     if (log_cnt == LOG_QUEUE_SIZE) {
         // pop the oldest one
         HAL_QueueItemPop(sg_dev_log_queue, log_buf, 0);
@@ -95,7 +97,6 @@ int push_dev_log(const char *func, const int line, const char *fmt, ...)
 
     strcat(log_buf, "\r\n");
 
-    Log_e("push dev log %s", log_buf);
     /* unblocking send */
     int ret = HAL_QueueItemPush(sg_dev_log_queue, log_buf, 0);
     if (ret != QCLOUD_RET_SUCCESS) {
@@ -108,8 +109,7 @@ int push_dev_log(const char *func, const int line, const char *fmt, ...)
 
 int app_send_dev_log(comm_peer_t *peer)
 {
-    int  ret = 0;
-
+    int ret = 0;
 #if WIFI_LOG_UPLOAD
 
     if (sg_dev_log_queue == NULL) {
@@ -118,19 +118,19 @@ int app_send_dev_log(comm_peer_t *peer)
     }
 
     uint32_t log_cnt = (uint32_t)HAL_QueueItemWaitingCount(sg_dev_log_queue);
-    if (log_cnt == 0)
-        return 0;
+    if ((log_cnt == 0) || (log_cnt > LOG_QUEUE_SIZE))
+    {
+        return ERR_OS_QUEUE;
+    }
 
     size_t max_len  = (log_cnt * LOG_ITEM_SIZE) + 32;
     char * json_buf = HAL_Malloc(max_len);
     if (json_buf == NULL) {
-        Log_e("malloc failed!, max_len %u, log_cnt %u", max_len, log_cnt);
+        Log_e("malloc failed!");
         return -1;
     }
 
     memset(json_buf, 0, max_len);
-    // set log type
-    json_buf[0] = 2;
 
     char log_buf[LOG_ITEM_SIZE];
     int  rc;
@@ -144,13 +144,23 @@ int app_send_dev_log(comm_peer_t *peer)
 
     HAL_Printf("to reply: %s\r\n", json_buf);
 
-    ble_event_report_wifi_log((const uint8_t *)json_buf, (uint16_t)strlen(json_buf));
+    int i = 0;
+    for (i = 0; i < 2; i++) {
+        ret =
+            HAL_UDP_WriteTo(peer->socket_id, (unsigned char *)json_buf, strlen(json_buf), peer->peer_addr, peer->port);
+        if (ret < 0) {
+            Log_e("send error: %s", HAL_UDP_GetErrnoStr());
+            break;
+        }
+        HAL_SleepMs(500);
+    }
     HAL_Free(json_buf);
 
 #endif
     return ret;
 }
 
+#if WIFI_PROV_BT_COMBO_CONFIG_ENABLE
 int app_send_ble_dev_log(void)
 {
 #if WIFI_LOG_UPLOAD
@@ -158,6 +168,7 @@ int app_send_ble_dev_log(void)
 #endif
     return 0;
 }
+#endif
 
 #if WIFI_LOG_UPLOAD
 static void log_server_task(void *pvParameters)
@@ -222,7 +233,7 @@ static void log_server_task(void *pvParameters)
 
 int qiot_log_service_start(void)
 {
-#if WIFI_LOG_UPLOAD && !WIFI_PROV_BT_COMBO_CONFIG_ENABLE
+#if WIFI_LOG_UPLOAD
     sg_log_task_run = true;
     static ThreadParams params;
     params.thread_func = log_server_task;

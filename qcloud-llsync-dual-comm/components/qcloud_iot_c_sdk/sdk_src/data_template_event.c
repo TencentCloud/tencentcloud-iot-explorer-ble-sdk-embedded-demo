@@ -51,13 +51,13 @@ static void _traverse_event_list(Qcloud_IoT_Template *pTemplate, List *list, con
         ListIterator *iter;
         ListNode *    node = NULL;
 
-        if (NULL == (iter = list_iterator_new(list, LIST_TAIL))) {
+        if (NULL == (iter = qcloud_list_iterator_new(list, LIST_TAIL))) {
             HAL_MutexUnlock(pTemplate->mutex);
             IOT_FUNC_EXIT;
         }
 
         for (;;) {
-            node = list_iterator_next(iter);
+            node = qcloud_list_iterator_next(iter);
             if (NULL == node) {
                 break;
             }
@@ -72,7 +72,7 @@ static void _traverse_event_list(Qcloud_IoT_Template *pTemplate, List *list, con
             if (eDEAL_EXPIRED == eDealType) {
                 if (expired(&pReply->timer)) {
                     Log_e("eventToken[%s] timeout", pReply->client_token);
-                    qcloud_iot_c_sdk_list_remove(list, node);
+                    qcloud_list_remove(list, node);
                     node = NULL;
                 }
             }
@@ -82,13 +82,13 @@ static void _traverse_event_list(Qcloud_IoT_Template *pTemplate, List *list, con
                 if (NULL != pReply->callback) {
                     pReply->callback(pTemplate, message);
                     Log_d("eventToken[%s] released", pReply->client_token);
-                    qcloud_iot_c_sdk_list_remove(list, node);
+                    qcloud_list_remove(list, node);
                     node = NULL;
                 }
             }
         }
 
-        list_iterator_destroy(iter);
+        qcloud_list_iterator_destroy(iter);
     }
     HAL_MutexUnlock(pTemplate->mutex);
 
@@ -173,7 +173,7 @@ static sEventReply *_create_event_add_to_list(Qcloud_IoT_Template *pTemplate, On
         IOT_FUNC_EXIT_RC(NULL);
     }
 
-    list_rpush(pTemplate->inner_data.event_list, node);
+    qcloud_list_rpush(pTemplate->inner_data.event_list, node);
 
     HAL_MutexUnlock(pTemplate->mutex);
 
@@ -196,7 +196,7 @@ static int _iot_event_json_init(void *handle, char *jsonBuffer, size_t sizeOfBuf
     }
 
     memset(jsonBuffer, 0, sizeOfBuffer);
-    if (event_count > SIGLE_EVENT) {
+    if (event_count > SINGLE_EVENT) {
         rc_of_snprintf = HAL_Snprintf(jsonBuffer, sizeOfBuffer, "{\"method\":\"%s\", \"clientToken\":\"%s\", ",
                                       POST_EVENTS, pReply->client_token);
     } else {
@@ -227,134 +227,80 @@ static int _iot_construct_event_json(void *handle, char *jsonBuffer, size_t size
     }
     // Log_d("event_count:%d, Doc_init:%s",event_count, jsonBuffer);
 
-    if ((remain_size = sizeOfBuffer - strlen(jsonBuffer)) <= 1) {
+    if ((ssize_t)(remain_size = sizeOfBuffer - strlen(jsonBuffer)) <= 1) {
         return QCLOUD_ERR_JSON_BUFFER_TOO_SMALL;
     }
 
-    if (event_count > SIGLE_EVENT) {  // mutlti event
-        rc_of_snprintf = HAL_Snprintf(jsonBuffer + strlen(jsonBuffer), remain_size, "\"events\":[");
+    if (event_count > SINGLE_EVENT) {  // mutlti event
+        rc_of_snprintf = HAL_Snprintf(jsonBuffer + strlen(jsonBuffer), remain_size, "\"events\":[{");
         rc             = check_snprintf_return(rc_of_snprintf, remain_size);
         if (rc != QCLOUD_RET_SUCCESS) {
             return rc;
         }
 
-        if ((remain_size = sizeOfBuffer - strlen(jsonBuffer)) <= 1) {
+        if ((ssize_t)(remain_size = sizeOfBuffer - strlen(jsonBuffer)) <= 1) {
             return QCLOUD_ERR_JSON_BUFFER_TOO_SMALL;
         }
+    }
 
-        for (i = 0; i < event_count; i++) {
-            sEvent *pEvent = pEventArry[i];
-            if (NULL == pEvent) {
-                Log_e("%dth/%d null event", i, event_count);
-                return QCLOUD_ERR_INVAL;
-            }
-
-            if (0 == pEvent->timestamp) {  // no accurate UTC time, set 0
-                rc_of_snprintf = HAL_Snprintf(jsonBuffer + strlen(jsonBuffer), remain_size,
-                                              "{\"eventId\":\"%s\", \"type\":\"%s\", "
-                                              "\"timestamp\":0, \"params\":{",
-                                              STRING_PTR_PRINT_SANITY_CHECK(pEvent->event_name),
-                                              STRING_PTR_PRINT_SANITY_CHECK(pEvent->type));
-            } else {  // accurate UTC time is second,change to ms
-                rc_of_snprintf = HAL_Snprintf(jsonBuffer + strlen(jsonBuffer), remain_size,
-                                              "{\"eventId\":\"%s\", \"type\":\"%s\", "
-                                              "\"timestamp\":%u000, \"params\":{",
-                                              STRING_PTR_PRINT_SANITY_CHECK(pEvent->event_name),
-                                              STRING_PTR_PRINT_SANITY_CHECK(pEvent->type), pEvent->timestamp);
-            }
-
-            rc = check_snprintf_return(rc_of_snprintf, remain_size);
-            if (rc != QCLOUD_RET_SUCCESS) {
-                return rc;
-            }
-
-            if ((remain_size = sizeOfBuffer - strlen(jsonBuffer)) <= 1) {
-                return QCLOUD_ERR_JSON_BUFFER_TOO_SMALL;
-            }
-
-            DeviceProperty *pJsonNode = pEvent->pEventData;
-            for (j = 0; j < pEvent->eventDataNum; j++) {
-                if (pJsonNode != NULL && pJsonNode->key != NULL) {
-                    rc = template_put_json_node(jsonBuffer, remain_size, pJsonNode->key, pJsonNode->data,
-                                                pJsonNode->type);
-
-                    if (rc != QCLOUD_RET_SUCCESS) {
-                        return rc;
-                    }
-                } else {
-                    Log_e("%dth/%d null event property data", i, pEvent->eventDataNum);
-                    return QCLOUD_ERR_INVAL;
-                }
-                pJsonNode++;
-            }
-            if ((remain_size = sizeOfBuffer - strlen(jsonBuffer)) <= 1) {
-                return QCLOUD_ERR_JSON_BUFFER_TOO_SMALL;
-            }
-
-            rc_of_snprintf = HAL_Snprintf(jsonBuffer + strlen(jsonBuffer) - 1, remain_size, "}},");
-
-            rc = check_snprintf_return(rc_of_snprintf, remain_size);
-            if (rc != QCLOUD_RET_SUCCESS) {
-                return rc;
-            }
-
-            pEvent++;
+    for (i = 0; i < event_count; i++) {
+        sEvent *pEvent = pEventArry[i];
+        if (NULL == pEvent) {
+            Log_e("%dth/%d null event", i, event_count);
+            return QCLOUD_ERR_INVAL;
         }
 
-        if ((remain_size = sizeOfBuffer - strlen(jsonBuffer)) <= 1) {
-            return QCLOUD_ERR_JSON_BUFFER_TOO_SMALL;
-        }
-        rc_of_snprintf = HAL_Snprintf(jsonBuffer + strlen(jsonBuffer) - 1, remain_size, "]");
-        rc             = check_snprintf_return(rc_of_snprintf, remain_size);
-        if (rc != QCLOUD_RET_SUCCESS) {
-            return rc;
-        }
-
-    } else {  // single
-        sEvent *pEvent = pEventArry[0];
-        if (0 == pEvent->timestamp) {  // no accurate UTC time, set 0
-            rc_of_snprintf = HAL_Snprintf(jsonBuffer + strlen(jsonBuffer), remain_size,
-                                          "\"eventId\":\"%s\", \"type\":\"%s\", \"timestamp\":0, \"params\":{",
-                                          STRING_PTR_PRINT_SANITY_CHECK(pEvent->event_name),
-                                          STRING_PTR_PRINT_SANITY_CHECK(pEvent->type));
-        } else {  // accurate UTC time is second,change to ms
-            rc_of_snprintf = HAL_Snprintf(jsonBuffer + strlen(jsonBuffer), remain_size,
-                                          "\"eventId\":\"%s\", \"type\":\"%s\", "
-                                          "\"timestamp\":%u000, \"params\":{",
-                                          STRING_PTR_PRINT_SANITY_CHECK(pEvent->event_name),
-                                          STRING_PTR_PRINT_SANITY_CHECK(pEvent->type), pEvent->timestamp);
-        }
-
+        rc_of_snprintf =
+            HAL_Snprintf(jsonBuffer + strlen(jsonBuffer), remain_size,
+                         "\"eventId\":\"%s\", \"type\":\"%s\", "
+                         "\"timestamp\":%llu, \"params\":{",
+                         STRING_PTR_PRINT_SANITY_CHECK(pEvent->event_name), STRING_PTR_PRINT_SANITY_CHECK(pEvent->type),
+                         ((uint64_t)(pEvent->timestamp) * 1000));
         rc = check_snprintf_return(rc_of_snprintf, remain_size);
         if (rc != QCLOUD_RET_SUCCESS) {
             return rc;
         }
 
-        if ((remain_size = sizeOfBuffer - strlen(jsonBuffer)) <= 1) {
+        if ((ssize_t)(remain_size = sizeOfBuffer - strlen(jsonBuffer)) <= 1) {
             return QCLOUD_ERR_JSON_BUFFER_TOO_SMALL;
         }
 
         DeviceProperty *pJsonNode = pEvent->pEventData;
-        for (i = 0; i < pEvent->eventDataNum; i++) {
-            if (pJsonNode != NULL && pJsonNode->key != NULL) {
-                rc = template_put_json_node(jsonBuffer, remain_size, pJsonNode->key, pJsonNode->data, pJsonNode->type);
-
-                if (rc != QCLOUD_RET_SUCCESS) {
-                    return rc;
-                }
-            } else {
+        for (j = 0; j < pEvent->eventDataNum; j++) {
+            if (pJsonNode == NULL || pJsonNode->key == NULL) {
                 Log_e("%dth/%d null event property data", i, pEvent->eventDataNum);
                 return QCLOUD_ERR_INVAL;
             }
+            rc = template_put_json_node(jsonBuffer, remain_size, pJsonNode->key, pJsonNode->data, pJsonNode->type);
+
+            if (rc != QCLOUD_RET_SUCCESS) {
+                return rc;
+            }
             pJsonNode++;
         }
+        if ((ssize_t)(remain_size = sizeOfBuffer - strlen(jsonBuffer)) <= 1) {
+            return QCLOUD_ERR_JSON_BUFFER_TOO_SMALL;
+        }
+        char *end_braces = "}},{";
+        if ((event_count > SINGLE_EVENT) && (i == (event_count - 1))) {
+            end_braces = "}}";
+        }else if(event_count == SINGLE_EVENT){
+            end_braces = "}";
+        }
+        rc_of_snprintf = HAL_Snprintf(jsonBuffer + strlen(jsonBuffer) - 1, remain_size, end_braces);
+
+        rc = check_snprintf_return(rc_of_snprintf, remain_size);
+        if (rc != QCLOUD_RET_SUCCESS) {
+            return rc;
+        }
+    }
+
+    if (event_count > SINGLE_EVENT) {
         if ((remain_size = sizeOfBuffer - strlen(jsonBuffer)) <= 1) {
             return QCLOUD_ERR_JSON_BUFFER_TOO_SMALL;
         }
-
-        rc_of_snprintf = HAL_Snprintf(jsonBuffer + strlen(jsonBuffer) - 1, remain_size, "}");
-
-        rc = check_snprintf_return(rc_of_snprintf, remain_size);
+        rc_of_snprintf = HAL_Snprintf(jsonBuffer + strlen(jsonBuffer) - 1, remain_size, "}]");
+        rc             = check_snprintf_return(rc_of_snprintf, remain_size);
         if (rc != QCLOUD_RET_SUCCESS) {
             return rc;
         }

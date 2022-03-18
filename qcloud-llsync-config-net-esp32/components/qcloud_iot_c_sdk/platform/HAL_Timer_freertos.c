@@ -31,7 +31,7 @@ extern "C" {
 #include "qcloud_iot_import.h"
 
 #define PLATFORM_HAS_TIME_FUNCS
-//#define PLATFORM_HAS_CMSIS
+// #define PLATFORM_HAS_CMSIS
 
 #ifdef PLATFORM_HAS_TIME_FUNCS
 #include <sys/time.h>
@@ -52,6 +52,8 @@ uint32_t HAL_GetTimeMs(void)
 
 #elif defined PLATFORM_HAS_CMSIS
     return HAL_GetTick();
+#else
+    return xTaskGetTickCount();
 #endif
 }
 

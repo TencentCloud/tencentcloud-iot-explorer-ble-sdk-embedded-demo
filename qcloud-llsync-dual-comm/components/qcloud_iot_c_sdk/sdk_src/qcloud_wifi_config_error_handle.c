@@ -23,8 +23,6 @@
 #include "qcloud_wifi_config.h"
 #include "qcloud_wifi_config_internal.h"
 
-#include "ble_qiot_export.h"
-
 /************** WiFi config error msg collect and post feature ******************/
 
 #if WIFI_ERR_LOG_POST
@@ -247,11 +245,33 @@ int app_send_error_log(comm_peer_t *peer, uint8_t record, uint16_t err_id, int32
 #if WIFI_ERR_LOG_POST
     int  ret;
     char msg_str[64]   = {0};
+    char json_str[128] = {0};
 
-    ret = HAL_Snprintf(msg_str, sizeof(msg_str), "%c%s", record == CUR_ERR ? 0x00:0x01, g_err_log[err_id]);
-    return ble_event_report_wifi_log((const uint8_t *)msg_str, (uint16_t)ret);
-#endif
+    HAL_Snprintf(msg_str, sizeof(msg_str), "%s (%u, %d)", g_err_log[err_id], err_id, err_sub_id);
+
+    cJSON *reply_json = cJSON_CreateObject();
+    cJSON_AddNumberToObject(reply_json, "cmdType", (int)CMD_DEVICE_REPLY);
+    cJSON_AddStringToObject(reply_json, "deviceReply", record == CUR_ERR ? "Current_Error" : "Previous_Error");
+    cJSON_AddStringToObject(reply_json, "log", msg_str);
+    if (0 == cJSON_PrintPreallocated(reply_json, json_str, sizeof(json_str), 0)) {
+        Log_e("cJSON_PrintPreallocated failed!");
+        cJSON_Delete(reply_json);
+        return -1;
+    }
+    /* append msg delimiter */
+    strcat(json_str, "\r\n");
+
+    ret = HAL_UDP_WriteTo(peer->socket_id, (unsigned char *)json_str, strlen(json_str), peer->peer_addr, peer->port);
+    if (ret < 0) {
+        Log_e("send error: %s", HAL_UDP_GetErrnoStr());
+    } else
+        Log_w("send error msg: %s", json_str);
+
+    cJSON_Delete(reply_json);
+    return ret;
+#else
     return 0;
+#endif
 }
 
 int get_and_post_error_log(comm_peer_t *peer)
@@ -271,6 +291,7 @@ int get_and_post_error_log(comm_peer_t *peer)
     return err_cnt;
 }
 
+#if WIFI_PROV_BT_COMBO_CONFIG_ENABLE
 int app_send_ble_error_log(void)
 {
 #if WIFI_ERR_LOG_POST
@@ -278,14 +299,16 @@ int app_send_ble_error_log(void)
 #endif
     return 0;
 }
+#endif
 
 int save_error_log(void)
 {
 #if WIFI_ERR_LOG_POST
     int      rc      = QCLOUD_RET_SUCCESS;
     uint32_t log_cnt = (uint32_t)HAL_QueueItemWaitingCount(g_err_log_queue);
-    if ((log_cnt == 0) || (log_cnt > ERR_LOG_QUEUE_SIZE))
-        return 0;
+    if ((log_cnt == 0) || (log_cnt > ERR_LOG_QUEUE_SIZE)) {
+        return ERR_OS_QUEUE;
+    }
 
     size_t          log_size = 2 * sizeof(uint32_t) + log_cnt * sizeof(err_log_t);
     save_err_log_t *log_src  = (save_err_log_t *)HAL_Malloc(log_size);

@@ -60,6 +60,21 @@ ble_qiot_ret_status_t ble_event_sync_mtu(uint16_t att_mtu)
     return ble_event_notify(BLE_QIOT_EVENT_UP_SYNC_MTU, NULL, 0, (const char*)&mtu_size, sizeof(uint16_t));
 }
 
+static ble_qiot_ret_status_t ble_event_data_filter(uint8_t type)
+{
+#if BLE_QIOT_LLSYNC_DUAL_COM
+    return BLE_QIOT_RS_OK;
+#endif
+
+    if (!llsync_is_connected() && type != BLE_QIOT_EVENT_UP_BIND_SIGN_RET && type != BLE_QIOT_EVENT_UP_CONN_SIGN_RET &&
+        type != BLE_QIOT_EVENT_UP_UNBIND_SIGN_RET && type != BLE_QIOT_EVENT_UP_SYNC_WAIT_TIME) {
+        ble_qiot_log_e("upload msg negate, device not connected");
+        return BLE_QIOT_RS_ERR;
+    }
+
+    return BLE_QIOT_RS_OK;
+}
+
 ble_qiot_ret_status_t ble_event_notify2(uint8_t type, uint8_t length_flag, uint8_t *header, uint8_t header_len,
                                         const char *buf, uint16_t buf_len)
 {
@@ -73,8 +88,7 @@ ble_qiot_ret_status_t ble_event_notify2(uint8_t type, uint8_t length_flag, uint8
 
     uint8_t send_buf[BLE_QIOT_EVENT_BUF_SIZE] = {0};
 
-    if (!llsync_is_connected() && type != BLE_QIOT_EVENT_UP_BIND_SIGN_RET && type != BLE_QIOT_EVENT_UP_CONN_SIGN_RET &&
-        type != BLE_QIOT_EVENT_UP_UNBIND_SIGN_RET && type != BLE_QIOT_EVENT_UP_SYNC_WAIT_TIME) {
+    if (BLE_QIOT_RS_OK != ble_event_data_filter(type)) {
         ble_qiot_log_e("upload msg negate, device not connected");
         return BLE_QIOT_RS_ERR;
     }

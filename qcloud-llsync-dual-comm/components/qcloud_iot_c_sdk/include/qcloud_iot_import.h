@@ -163,18 +163,18 @@ void HAL_QueueDestory(void *queue_handle);
  *
  * @return 0 is success other failue
  */
-uint32_t HAL_QueueReset(void *queue_handle);
+int HAL_QueueReset(void *queue_handle);
 /**
  * @brief get queue item count
  * @param queue_handle
  *
  * @return 0 is success other failue
  */
-unsigned long HAL_QueueItemWaitingCount(void *queue_handle);
+int HAL_QueueItemWaitingCount(void *queue_handle);
 
-unsigned long HAL_QueueItemPop(void *queue_handle, void *const item_buffer, uint32_t wait_timeout);
+int HAL_QueueItemPop(void *queue_handle, void *const item_buffer, uint32_t wait_timeout);
 
-unsigned long HAL_QueueItemPush(void *queue_handle, void *const item_buffer, uint32_t wait_timeout);
+int HAL_QueueItemPush(void *queue_handle, void *const item_buffer, uint32_t wait_timeout);
 #endif  // WIFI_CONFIG_ENABLED
 
 /**
@@ -501,7 +501,21 @@ int HAL_DTLS_Read(uintptr_t handle, unsigned char *data, size_t datalen, uint32_
  * @return  TCP socket handle (value>0) when success, or 0 otherwise
  */
 uintptr_t HAL_TCP_Connect(const char *host, uint16_t port);
-
+/**
+ * @brief Creat tcp server
+ *
+ * @host    server address
+ * @port    server port
+ * @return  TCP socket handle (value>0) when success, or 0 otherwise
+ */
+uintptr_t HAL_TCP_CreatBind(const char *host, uint16_t port);
+/**
+ * @brief tcp server accept
+ *
+ * @server_fd    tcp server file discriptor
+ * @return  TCP socket handle (value>0) when success, or 0 otherwise
+ */
+uintptr_t HAL_TCP_Accept(int server_fd);
 /**
  * @brief Disconnect with server and release resource
  *
